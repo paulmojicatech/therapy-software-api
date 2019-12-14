@@ -31,7 +31,7 @@ export interface IClients {
         IsSameAsClient?: boolean;
     },
     ClientSessionDetails?: {
-        ClientSessionID: number;
+        ClientSessionID?: number;
         ClientSessionDate: string;
         ClientSessionNotes: string;
         ClientSessionICDCodes?: [
