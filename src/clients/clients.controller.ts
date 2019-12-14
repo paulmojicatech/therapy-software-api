@@ -1,6 +1,7 @@
-import { Controller, Get } from '@nestjs/common';
-import { DataService } from 'src/services/data.service';
-import { IClients } from 'src/models/clients.interface';
+import { Controller, Get, Put, Body, Post, Param } from '@nestjs/common';
+import { DataService } from '../services/data.service';
+import { IClients } from '../models/clients.interface';
+import { json } from 'body-parser';
 
 @Controller('clients')
 export class ClientsController {
@@ -11,15 +12,83 @@ export class ClientsController {
     async getClients(): Promise<any[]> {
 
         return new Promise<any[]>(async (resolve, reject) => {
-            const clients = await this._dataSvc.getCollection('Clients');
-            const clientSessions = await this._dataSvc.getCollection('ClientSessions');
-            const clientsWithSessions: IClients[] = clients.map(client => {
-                const currentClientSessions = clientSessions.filter(session => client.ClientID === session.ClientID);
-                return { ...client, SessionDetails: currentClientSessions };
-            });
-            resolve(clientsWithSessions);
+            try {
+                const clients = await this._dataSvc.getCollection('Clients');
+                const clientSessions = await this._dataSvc.getCollection('ClientSessions');
+                const clientsWithSessions: IClients[] = clients.map(client => {
+                    const currentClientSessions = clientSessions.filter(session => client.ClientID === session.ClientID);
+                    return { ...client, SessionDetails: currentClientSessions };
+                });
+                resolve(clientsWithSessions);
+            } catch (ex) {
+                reject(ex);
+            }
         });
         
     }
+
+    @Post()
+    async addClient(@Body() newClient: { 
+        ClientID?: number,
+        ClientName: string;
+        ClientLastName?: string;
+        ClientSSN?: string;
+        ClientAddress?: string;
+        ClientCity?: string;
+        ClientState?: string;
+        ClientZip?: string;
+        ClientPhone?: string;
+        ClientEmail?: string;
+        ClientDoB?: string;
+        ClientSecondaryPhone?: string;
+        ClientSecondaryEmail?: string;
+        IsDischarged?: boolean;
+        DischargeReason?: string;
+        DischargeDate?: Date;
+        DischargeNote?: string;
+    }): Promise<any> {
+
+        return new Promise<any>(async (resolve, reject) => {
+            try {
+                const allClients = await this._dataSvc.getCollection('Clients');
+                const lastClient = allClients.sort((a, b) => b - a)[0];
+                const clientId = lastClient ? lastClient.ClientID + 1 : 1;
+                newClient = {...newClient, ClientID: clientId};
+                await this._dataSvc.addToCollection('Clients', newClient);
+                
+                resolve({
+                    message: `${newClient.ClientName} added successfully`
+                });
+            } catch (ex) {
+                reject(ex);
+            }
+        });
+    }
+
+    @Put(':id/clientSessions')
+    async addClientSession(@Param('id') id: string, @Body() sessionDetails:{ ClientSessionDate: 'string'}): 
+        Promise<{ status: string, message: string }> {
+        const clientId = +id;
+        const where = { ClientID: clientId };
+        const lastClientSession = await this._dataSvc.getlastDocumentInCollection('ClientSessions', 
+            where, 
+            { ClientSessionID: -1 });
+        const newSessionID = lastClientSession.ClientSessionID + 1;
+        const newSession = {
+            ClientSessionID: newSessionID,
+            ClientID: clientId,
+            ClientSessionDate: sessionDetails.ClientSessionDate
+        };
+
+        await this._dataSvc.addToCollection('ClientSessions', newSession);
+
+        return Promise.resolve({
+            status: 'success',
+            message: `
+                ${JSON.stringify(newSession)} has been added.
+            `
+        });
+    }
+
 
 }

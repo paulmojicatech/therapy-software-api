@@ -1,15 +1,16 @@
 import { MongoClient } from "mongodb";
 import { Injectable } from "@nestjs/common";
-import { mongoClient } from 'src/config/config';
+import { mongoClient } from '../config/config';
 
 @Injectable()
 
 export class DataService {
 
     private _client = new MongoClient(mongoClient);
-    private _db = 'pmt-itt';
+    private _db = 'pmt-itt-dev';
 
-    async getCollection(collectionName: string, options: any = {}): Promise<any[]> {
+    async getCollection(collectionName: string, options: any = {}): 
+        Promise<any[]> {
         return new Promise<any[]>(async (resolve, reject) => {
 
             let items: any[] = [];
@@ -34,6 +35,36 @@ export class DataService {
 
         });
 
+    }
+
+    async getlastDocumentInCollection(collectionName: string, 
+        options: any = {}, 
+        sort: any): Promise<any> {
+        let lastItem = {};
+        const mongoConn = await this.connect();
+        await mongoConn
+            .db(this._db)
+            .collection(collectionName)
+            .find(options)
+            .sort(sort)
+            .limit(1)
+            .forEach(item => {
+                lastItem = item;
+            });
+        return Promise.resolve(lastItem);
+    }
+
+    async addToCollection(collectionName: string, document: any): Promise<boolean> {
+        let status = false;
+        return new Promise<boolean>(async (resolve, reject) => {
+            const client = await this.connect();
+            await client
+                .db(this._db)
+                .collection(collectionName)
+                .insertOne(document);
+            status = true;
+            resolve(status);
+        });
     }
 
     private async connect(): Promise<MongoClient> {

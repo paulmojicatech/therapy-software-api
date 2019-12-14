@@ -1,9 +1,9 @@
 import { Module } from '@nestjs/common';
-import { AppController } from 'src/app.controller';
-import { AppService } from 'src/app.service';
-import { ClientsController } from 'src/clients/clients.controller';
-import { DataService } from 'src/services/data.service';
-import { HeartbeatController } from 'src/heartbeat/heatbeat.controller';
+import { AppController } from './app.controller';
+import { AppService } from './app.service';
+import { ClientsController } from './clients/clients.controller';
+import { DataService } from './services/data.service';
+import { HeartbeatController } from './heartbeat/heatbeat.controller';
 
 
 @Module({
@@ -18,4 +18,4 @@ import { HeartbeatController } from 'src/heartbeat/heatbeat.controller';
     DataService
   ],
 })
-export class AppModule {}
+export class AppModule { }
