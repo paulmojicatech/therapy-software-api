@@ -1,4 +1,4 @@
-import { Controller, Get, Put, Body, Post, Param } from '@nestjs/common';
+import { Controller, Get, Put, Body, Post, Param, Delete } from '@nestjs/common';
 import { DataService } from '../services/data.service';
 import { IClients } from '../models/clients.interface';
 import { json } from 'body-parser';
@@ -62,6 +62,21 @@ export class ClientsController {
             } catch (ex) {
                 reject(ex);
             }
+        });
+    }
+
+    @Delete(':id')
+    async deleteClient(@Param('id') id: string): Promise<{ status: string, message: string }> {
+
+        const deleteClause = {
+            ClientID: +id
+        };
+
+        await this._dataSvc.deleteItemFromCollection('Clients', deleteClause);
+
+        return Promise.resolve({
+            status: 'sucess',
+            message: 'Client has been deleted'
         });
     }
 

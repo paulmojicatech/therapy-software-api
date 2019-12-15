@@ -67,6 +67,16 @@ export class DataService {
         });
     }
 
+    async deleteItemFromCollection(collectionName: string, deleteClause: any): Promise<void> {
+        const client = await this.connect();
+        await client
+            .db(this._db)
+            .collection(collectionName)
+            .deleteOne(deleteClause);
+
+        return Promise.resolve();
+    }
+
     private async connect(): Promise<MongoClient> {
         return new Promise<MongoClient>(async(resolve, reject) => {
             try {
