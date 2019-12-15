@@ -80,7 +80,7 @@ export class ClientsController {
         });
     }
 
-    @Put(':id/clientSessions')
+    @Post(':id/clientSessions')
     async addClientSession(@Param('id') id: string, @Body() sessionDetails:{ ClientSessionDate: 'string'}): 
         Promise<{ status: string, message: string }> {
         const clientId = +id;
@@ -104,6 +104,20 @@ export class ClientsController {
             `
         });
     }
+
+    @Delete(':id/clientSessions/:clientSessionId')
+    async deleteClientSession(@Param('id') id: string, @Param('clientSessionId') clientSessionId: string):
+        Promise<{ status: string, message: string}> {
+
+            const deleteClause = {
+                ClientSessionID: +clientSessionId
+            };
+            await this._dataSvc.deleteItemFromCollection('ClientSessions', deleteClause);
+            return Promise.resolve({
+                status: 'success',
+                message: 'Client Session has been deleted'                
+            });
+        }
 
 
 }
