@@ -28,36 +28,20 @@ export class ClientsController {
     }
 
     @Post()
-    async addClient(@Body() newClient: { 
-        ClientID?: number,
-        ClientName: string;
-        ClientLastName?: string;
-        ClientSSN?: string;
-        ClientAddress?: string;
-        ClientCity?: string;
-        ClientState?: string;
-        ClientZip?: string;
-        ClientPhone?: string;
-        ClientEmail?: string;
-        ClientDoB?: string;
-        ClientSecondaryPhone?: string;
-        ClientSecondaryEmail?: string;
-        IsDischarged?: boolean;
-        DischargeReason?: string;
-        DischargeDate?: Date;
-        DischargeNote?: string;
-    }): Promise<any> {
+    async addClient(@Body() newClient: { headers: any, body: any}): Promise<any> {
 
         return new Promise<any>(async (resolve, reject) => {
             try {
                 const allClients = await this._dataSvc.getCollection('Clients');
+                let newClientInstance = newClient.body.newClient;
                 const lastClient = allClients.sort((a, b) => b - a)[0];
                 const clientId = lastClient ? lastClient.ClientID + 1 : 1;
-                newClient = {...newClient, ClientID: clientId};
-                await this._dataSvc.addToCollection('Clients', newClient);
+                newClientInstance = {...newClientInstance, ClientID: clientId};
+                await this._dataSvc.addToCollection('Clients', newClientInstance);
                 
                 resolve({
-                    message: `${newClient.ClientName} added successfully`
+                    status: 'success',
+                    message: `${newClientInstance.ClientName} added successfully`
                 });
             } catch (ex) {
                 reject(ex);
