@@ -22,6 +22,8 @@ export class ClientsController {
                 resolve(clientsWithSessions);
             } catch (ex) {
                 reject(ex);
+            } finally {
+                this._dataSvc.disconnect();
             }
         });
         
@@ -39,68 +41,78 @@ export class ClientsController {
                 newClientInstance = {...newClientInstance, ClientID: clientId};
                 await this._dataSvc.addToCollection('Clients', newClientInstance);
                 
-                resolve({
-                    status: 'success',
-                    message: `${newClientInstance.ClientName} added successfully`
-                });
+                resolve({ GeneralDetails: newClientInstance });
             } catch (ex) {
                 reject(ex);
+            } finally {
+                this._dataSvc.disconnect();
             }
         });
     }
 
     @Delete(':id')
-    async deleteClient(@Param('id') id: string): Promise<{ status: string, message: string }> {
+    async deleteClient(@Param('id') id: string): Promise<number> {
 
-        const deleteClause = {
-            ClientID: +id
-        };
+        try {
+            const deleteClause = {
+                ClientID: +id
+            };
 
-        await this._dataSvc.deleteItemFromCollection('Clients', deleteClause);
+            await this._dataSvc.deleteItemFromCollection('Clients', deleteClause);
 
-        return Promise.resolve({
-            status: 'sucess',
-            message: 'Client has been deleted'
-        });
+            return Promise.resolve(+id);
+        } catch (err) {
+            return Promise.reject(err);
+        } finally {
+            this._dataSvc.disconnect();
+        }
     }
 
     @Post(':id/clientSessions')
     async addClientSession(@Param('id') id: string, @Body() sessionDetails:{ ClientSessionDate: 'string'}): 
-        Promise<{ status: string, message: string }> {
-        const clientId = +id;
-        const where = { ClientID: clientId };
-        const lastClientSession = await this._dataSvc.getlastDocumentInCollection('ClientSessions', 
-            where, 
-            { ClientSessionID: -1 });
-        const newSessionID = lastClientSession.ClientSessionID + 1;
-        const newSession = {
-            ClientSessionID: newSessionID,
-            ClientID: clientId,
-            ClientSessionDate: sessionDetails.ClientSessionDate
-        };
+        Promise<{
+            ClientSessionID: any;
+            ClientID: number;
+            ClientSessionDate: "string";
+        }> {
+        try {
+            const clientId = +id;
+            const where = { ClientID: clientId };
+            const lastClientSession = await this._dataSvc.getlastDocumentInCollection('ClientSessions', 
+                where, 
+                { ClientSessionID: -1 });
+            const newSessionID = lastClientSession.ClientSessionID + 1;
+            const newSession = {
+                ClientSessionID: newSessionID,
+                ClientID: clientId,
+                ClientSessionDate: sessionDetails.ClientSessionDate
+            };
 
-        await this._dataSvc.addToCollection('ClientSessions', newSession);
+            await this._dataSvc.addToCollection('ClientSessions', newSession);
 
-        return Promise.resolve({
-            status: 'success',
-            message: `
-                ${JSON.stringify(newSession)} has been added.
-            `
-        });
+            return Promise.resolve(newSession);
+        } catch (err) {
+            return Promise.reject(err);
+        } finally {
+            this._dataSvc.disconnect();
+        }
     }
 
     @Delete(':id/clientSessions/:clientSessionId')
     async deleteClientSession(@Param('id') id: string, @Param('clientSessionId') clientSessionId: string):
-        Promise<{ status: string, message: string}> {
-
-            const deleteClause = {
-                ClientSessionID: +clientSessionId
-            };
-            await this._dataSvc.deleteItemFromCollection('ClientSessions', deleteClause);
-            return Promise.resolve({
-                status: 'success',
-                message: 'Client Session has been deleted'                
-            });
+        Promise<any[]> {
+            try {
+                const deleteClause = {
+                    ClientSessionID: +clientSessionId
+                };
+                await this._dataSvc.deleteItemFromCollection('ClientSessions', deleteClause);
+                const updatedClients = await this._dataSvc.getCollection('Clients');
+                return Promise.resolve(updatedClients);
+            } catch (err) {
+                return Promise.reject(err);
+            } finally {
+                this._dataSvc.disconnect();
+            }
         }
 
 

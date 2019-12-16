@@ -77,6 +77,12 @@ export class DataService {
         return Promise.resolve();
     }
 
+    async disconnect(): Promise<void> {
+        if (this._client?.isConnected()) {
+            this._client.close(true);
+        }
+    }
+
     private async connect(): Promise<MongoClient> {
         return new Promise<MongoClient>(async(resolve, reject) => {
             try {
