@@ -22,101 +22,96 @@ export class ClientsController {
                 resolve(clientsWithSessions);
             } catch (ex) {
                 reject(ex);
+            } finally {
+                this._dataSvc.disconnect();
             }
         });
         
     }
 
     @Post()
-    async addClient(@Body() newClient: { 
-        ClientID?: number,
-        ClientName: string;
-        ClientLastName?: string;
-        ClientSSN?: string;
-        ClientAddress?: string;
-        ClientCity?: string;
-        ClientState?: string;
-        ClientZip?: string;
-        ClientPhone?: string;
-        ClientEmail?: string;
-        ClientDoB?: string;
-        ClientSecondaryPhone?: string;
-        ClientSecondaryEmail?: string;
-        IsDischarged?: boolean;
-        DischargeReason?: string;
-        DischargeDate?: Date;
-        DischargeNote?: string;
-    }): Promise<any> {
+    async addClient(@Body() newClient: { headers: any, body: any}): Promise<any> {
 
         return new Promise<any>(async (resolve, reject) => {
             try {
-                const allClients = await this._dataSvc.getCollection('Clients');
-                const lastClient = allClients.sort((a, b) => b - a)[0];
+                let newClientInstance = newClient.body.newClient;
+                const lastClient = await this._dataSvc.getlastDocumentInCollection('Clients', {}, { ClientID: -1});
                 const clientId = lastClient ? lastClient.ClientID + 1 : 1;
-                newClient = {...newClient, ClientID: clientId};
-                await this._dataSvc.addToCollection('Clients', newClient);
+                newClientInstance = {...newClientInstance, ClientID: clientId};
+                await this._dataSvc.addToCollection('Clients', newClientInstance);
                 
-                resolve({
-                    message: `${newClient.ClientName} added successfully`
-                });
+                resolve({ GeneralDetails: newClientInstance });
             } catch (ex) {
                 reject(ex);
+            } finally {
+                this._dataSvc.disconnect();
             }
         });
     }
 
     @Delete(':id')
-    async deleteClient(@Param('id') id: string): Promise<{ status: string, message: string }> {
+    async deleteClient(@Param('id') id: string): Promise<number> {
 
-        const deleteClause = {
-            ClientID: +id
-        };
+        try {
+            const deleteClause = {
+                ClientID: +id
+            };
 
-        await this._dataSvc.deleteItemFromCollection('Clients', deleteClause);
+            await this._dataSvc.deleteItemFromCollection('Clients', deleteClause);
 
-        return Promise.resolve({
-            status: 'sucess',
-            message: 'Client has been deleted'
-        });
+            return Promise.resolve(+id);
+        } catch (err) {
+            return Promise.reject(err);
+        } finally {
+            this._dataSvc.disconnect();
+        }
     }
 
     @Post(':id/clientSessions')
-    async addClientSession(@Param('id') id: string, @Body() sessionDetails:{ ClientSessionDate: 'string'}): 
-        Promise<{ status: string, message: string }> {
-        const clientId = +id;
-        const where = { ClientID: clientId };
-        const lastClientSession = await this._dataSvc.getlastDocumentInCollection('ClientSessions', 
-            where, 
-            { ClientSessionID: -1 });
-        const newSessionID = lastClientSession.ClientSessionID + 1;
-        const newSession = {
-            ClientSessionID: newSessionID,
-            ClientID: clientId,
-            ClientSessionDate: sessionDetails.ClientSessionDate
-        };
+    async addClientSession(@Param('id') id: string, @Body() sessionDetails:{ headers: any, body: any}): 
+        Promise<IClients> {
+        try {
+            const clientId = +id;
+            const lastClientSession = await this._dataSvc.getlastDocumentInCollection('ClientSessions', 
+                {}, 
+                { ClientSessionID: -1 });
+            const newSessionID = !!lastClientSession.ClientSessionID ? 
+                lastClientSession.ClientSessionID + 1 :
+                1;
+            const newSession = {
+                ClientSessionID: newSessionID,
+                ClientID: clientId,
+                ClientSessionDate: sessionDetails.body.ClientSessionDate
+            };
 
-        await this._dataSvc.addToCollection('ClientSessions', newSession);
-
-        return Promise.resolve({
-            status: 'success',
-            message: `
-                ${JSON.stringify(newSession)} has been added.
-            `
-        });
+            await this._dataSvc.addToCollection('ClientSessions', newSession);
+            const updatedClients = await this._dataSvc.getCollection('Clients', { ClientID: clientId});
+            const updatedClient = updatedClients.find(client => client.ClientID === clientId);
+            const updatedClientSessions = await this._dataSvc.getCollection('ClientSessions', { ClientID: clientId});
+            
+            return Promise.resolve({GeneralDetails: updatedClient, SessionDetails: updatedClientSessions });
+        } catch (err) {
+            return Promise.reject(err);
+        } finally {
+            this._dataSvc.disconnect();
+        }
     }
 
     @Delete(':id/clientSessions/:clientSessionId')
     async deleteClientSession(@Param('id') id: string, @Param('clientSessionId') clientSessionId: string):
-        Promise<{ status: string, message: string}> {
-
-            const deleteClause = {
-                ClientSessionID: +clientSessionId
-            };
-            await this._dataSvc.deleteItemFromCollection('ClientSessions', deleteClause);
-            return Promise.resolve({
-                status: 'success',
-                message: 'Client Session has been deleted'                
-            });
+        Promise<any[]> {
+            try {
+                const deleteClause = {
+                    ClientSessionID: +clientSessionId
+                };
+                await this._dataSvc.deleteItemFromCollection('ClientSessions', deleteClause);
+                const updatedClients = await this._dataSvc.getCollection('Clients');
+                return Promise.resolve(updatedClients);
+            } catch (err) {
+                return Promise.reject(err);
+            } finally {
+                this._dataSvc.disconnect();
+            }
         }
 
 
