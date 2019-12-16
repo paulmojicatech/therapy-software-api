@@ -34,9 +34,8 @@ export class ClientsController {
 
         return new Promise<any>(async (resolve, reject) => {
             try {
-                const allClients = await this._dataSvc.getCollection('Clients');
                 let newClientInstance = newClient.body.newClient;
-                const lastClient = allClients.sort((a, b) => b - a)[0];
+                const lastClient = await this._dataSvc.getlastDocumentInCollection('Clients', {}, { ClientID: -1});
                 const clientId = lastClient ? lastClient.ClientID + 1 : 1;
                 newClientInstance = {...newClientInstance, ClientID: clientId};
                 await this._dataSvc.addToCollection('Clients', newClientInstance);
@@ -69,28 +68,28 @@ export class ClientsController {
     }
 
     @Post(':id/clientSessions')
-    async addClientSession(@Param('id') id: string, @Body() sessionDetails:{ ClientSessionDate: 'string'}): 
-        Promise<{
-            ClientSessionID: any;
-            ClientID: number;
-            ClientSessionDate: "string";
-        }> {
+    async addClientSession(@Param('id') id: string, @Body() sessionDetails:{ headers: any, body: any}): 
+        Promise<IClients> {
         try {
             const clientId = +id;
-            const where = { ClientID: clientId };
             const lastClientSession = await this._dataSvc.getlastDocumentInCollection('ClientSessions', 
-                where, 
+                {}, 
                 { ClientSessionID: -1 });
-            const newSessionID = lastClientSession.ClientSessionID + 1;
+            const newSessionID = !!lastClientSession.ClientSessionID ? 
+                lastClientSession.ClientSessionID + 1 :
+                1;
             const newSession = {
                 ClientSessionID: newSessionID,
                 ClientID: clientId,
-                ClientSessionDate: sessionDetails.ClientSessionDate
+                ClientSessionDate: sessionDetails.body.ClientSessionDate
             };
 
             await this._dataSvc.addToCollection('ClientSessions', newSession);
-
-            return Promise.resolve(newSession);
+            const updatedClients = await this._dataSvc.getCollection('Clients', { ClientID: clientId});
+            const updatedClient = updatedClients.find(client => client.ClientID === clientId);
+            const updatedClientSessions = await this._dataSvc.getCollection('ClientSessions', { ClientID: clientId});
+            
+            return Promise.resolve({GeneralDetails: updatedClient, SessionDetails: updatedClientSessions });
         } catch (err) {
             return Promise.reject(err);
         } finally {
