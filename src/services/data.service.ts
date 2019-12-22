@@ -1,6 +1,7 @@
 import { MongoClient } from "mongodb";
 import { Injectable } from "@nestjs/common";
 import { mongoClient } from '../config/config';
+import { resolve } from "dns";
 
 @Injectable()
 
@@ -67,6 +68,21 @@ export class DataService {
         });
     }
 
+    async updateCollection(collectionName: string, options: any, updatedFields: any[]): Promise<boolean> {
+        try {
+            const mongoClient = await this.connect();
+            const updateStatement = this.buildUpdateQuery(updatedFields);
+            await mongoClient
+                .db(this._db)
+                .collection(collectionName)
+                .findOneAndUpdate(options, {$set: updateStatement});
+            return Promise.resolve(true);
+        } catch (err) {
+            return Promise.reject(err);
+        }
+        
+    }
+
     async deleteItemFromCollection(collectionName: string, deleteClause: any): Promise<void> {
         const client = await this.connect();
         await client
@@ -99,5 +115,15 @@ export class DataService {
                 reject(err);
             }
         });
+    }
+
+    private buildUpdateQuery(fields: any[]): any {
+        let updateStatement = {};
+        
+        fields.forEach(field => {
+            const key = Object.keys(field)[0];
+            updateStatement[key] = field[key];
+        });
+        return updateStatement;
     }
 }

@@ -49,24 +49,6 @@ export class ClientsController {
         });
     }
 
-    @Delete(':id')
-    async deleteClient(@Param('id') id: string): Promise<number> {
-
-        try {
-            const deleteClause = {
-                ClientID: +id
-            };
-
-            await this._dataSvc.deleteItemFromCollection('Clients', deleteClause);
-
-            return Promise.resolve(+id);
-        } catch (err) {
-            return Promise.reject(err);
-        } finally {
-            this._dataSvc.disconnect();
-        }
-    }
-
     @Post(':id/clientSessions')
     async addClientSession(@Param('id') id: string, @Body() sessionDetails:{ headers: any, body: any}): 
         Promise<IClients> {
@@ -90,6 +72,50 @@ export class ClientsController {
             const updatedClientSessions = await this._dataSvc.getCollection('ClientSessions', { ClientID: clientId});
             
             return Promise.resolve({GeneralDetails: updatedClient, SessionDetails: updatedClientSessions });
+        } catch (err) {
+            return Promise.reject(err);
+        } finally {
+            this._dataSvc.disconnect();
+        }
+    }
+
+    @Put(':id')
+    async updateClient(@Param('id') id: string, @Body() updatedClientReq:{ headers: any, body: { fields: any[] }}): 
+        Promise<IClients> {
+        try {
+            const updatedFields = updatedClientReq.body.fields;
+            const where = { ClientID: +id };
+            const success = await this._dataSvc.updateCollection('Clients', where, updatedFields);
+            if (success) {
+                const updatedClients: IClients[] = await this._dataSvc.getCollection('Clients', where);
+                if (updatedClients?.length) {
+
+                    const clientSessions = await this._dataSvc.getCollection('ClientSessions', where);
+                    const updateClient = {...updatedClients[0], ClientSessions: clientSessions };
+                    return Promise.resolve(updateClient);
+                }
+            } else {
+                return Promise.reject('Error updating client');
+            }
+        } catch (err) {
+            return Promise.reject(err);
+        } finally {
+            this._dataSvc.disconnect();
+        }
+        return null;
+    }
+
+    @Delete(':id')
+    async deleteClient(@Param('id') id: string): Promise<number> {
+
+        try {
+            const deleteClause = {
+                ClientID: +id
+            };
+
+            await this._dataSvc.deleteItemFromCollection('Clients', deleteClause);
+
+            return Promise.resolve(+id);
         } catch (err) {
             return Promise.reject(err);
         } finally {
