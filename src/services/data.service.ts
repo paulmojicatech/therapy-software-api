@@ -68,14 +68,13 @@ export class DataService {
         });
     }
 
-    async updateCollection(collectionName: string, options: any, updatedFields: any[]): Promise<boolean> {
+    async updateCollection(collectionName: string, options: any, document: any): Promise<boolean> {
         try {
             const mongoClient = await this.connect();
-            const updateStatement = this.buildUpdateQuery(updatedFields);
             await mongoClient
                 .db(this._db)
                 .collection(collectionName)
-                .findOneAndUpdate(options, {$set: updateStatement});
+                .findOneAndUpdate(options, {$set: document});
             return Promise.resolve(true);
         } catch (err) {
             return Promise.reject(err);

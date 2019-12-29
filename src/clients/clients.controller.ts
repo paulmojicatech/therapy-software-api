@@ -1,6 +1,6 @@
 import { Controller, Get, Put, Body, Post, Param, Delete } from '@nestjs/common';
 import { DataService } from '../services/data.service';
-import { IClients } from '../models/clients.interface';
+import { IClients, IClientSessionDetails } from '../models/clients.interface';
 import { json } from 'body-parser';
 
 @Controller('clients')
@@ -80,12 +80,12 @@ export class ClientsController {
     }
 
     @Put(':id')
-    async updateClient(@Param('id') id: string, @Body() updatedClientReq:{ headers: any, body: { fields: any[] }}): 
+    async updateClient(@Param('id') id: string, @Body() updatedClientReq:{ headers: any, body: { updatedClient: IClients }}): 
         Promise<IClients> {
         try {
-            const updatedFields = updatedClientReq.body.fields;
+
             const where = { ClientID: +id };
-            const success = await this._dataSvc.updateCollection('Clients', where, updatedFields);
+            const success = await this._dataSvc.updateCollection('Clients', where, updatedClientReq.body.updatedClient.GeneralDetails);
             if (success) {
                 const updatedClients: IClients[] = await this._dataSvc.getCollection('Clients', where);
                 if (updatedClients?.length) {
@@ -102,7 +102,24 @@ export class ClientsController {
         } finally {
             this._dataSvc.disconnect();
         }
-        return null;
+    }
+
+    @Put(':id/clientSessions/:clientSessionId')
+    async updateClientSession(@Param('id') id: string, @Param('clientSessionId') clientSessionId: string,
+        @Body() updatedClientSessionReq: { headers: any, body: {updatedClientSession: IClientSessionDetails }}): Promise<IClientSessionDetails> {
+            try {
+                const where = { ClientSessionID: +clientSessionId };
+                const updatedSession = {...updatedClientSessionReq.body.updatedClientSession, 
+                    ClientSessionDate: `${new Date(updatedClientSessionReq.body.updatedClientSession.ClientSessionDate).toUTCString()}`};
+                const success = await this._dataSvc.updateCollection('ClientSessions', where, updatedSession);
+                if (success) {
+                    return Promise.resolve(updatedSession);
+                } else {
+                    return Promise.reject('Error: Client Session was not updated correctly');
+                }
+            } catch (err) {
+                return Promise.reject(err);
+            }
     }
 
     @Delete(':id')
