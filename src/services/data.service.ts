@@ -1,13 +1,12 @@
 import { MongoClient } from "mongodb";
 import { Injectable } from "@nestjs/common";
-import { mongoClient } from '../config/config';
-import { resolve } from "dns";
+import { MONGO_CONN } from '../config/config';
 
 @Injectable()
 
 export class DataService {
 
-    private _client = new MongoClient(mongoClient);
+    private _client = new MongoClient(MONGO_CONN);
     private _db = 'pmt-itt-dev';
 
     async getCollection(collectionName: string, options: any = {}): 
