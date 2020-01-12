@@ -1,13 +1,12 @@
 import { MongoClient } from "mongodb";
 import { Injectable } from "@nestjs/common";
-import { mongoClient } from '../config/config';
-import { resolve } from "dns";
+import { MONGO_CONN } from '../config/config';
 
 @Injectable()
 
 export class DataService {
 
-    private _client = new MongoClient(mongoClient);
+    private _client = new MongoClient(MONGO_CONN);
     private _db = 'pmt-itt-dev';
 
     async getCollection(collectionName: string, options: any = {}): 
@@ -68,14 +67,13 @@ export class DataService {
         });
     }
 
-    async updateCollection(collectionName: string, options: any, updatedFields: any[]): Promise<boolean> {
+    async updateCollection(collectionName: string, options: any, document: any): Promise<boolean> {
         try {
             const mongoClient = await this.connect();
-            const updateStatement = this.buildUpdateQuery(updatedFields);
             await mongoClient
                 .db(this._db)
                 .collection(collectionName)
-                .findOneAndUpdate(options, {$set: updateStatement});
+                .findOneAndUpdate(options, {$set: document});
             return Promise.resolve(true);
         } catch (err) {
             return Promise.reject(err);

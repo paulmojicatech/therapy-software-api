@@ -30,23 +30,27 @@ export interface IClients {
         PolicyDoB?: string;
         IsSameAsClient?: boolean;
     },
-    ClientSessionDetails?: {
-        ClientSessionID?: number;
-        ClientSessionDate: string;
-        ClientSessionNotes: string;
-        ClientSessionICDCodes?: [
-            {
-                CPTCodeID: number;
-                CPTCodeName: string;
-                CPTCodeDescr?: string;
-            }
-        ];
-        ClientSessionCPTCodes?: [
-            {
-                ICDCodeID: number;
-                ICDCodeName: string;
-                ICDCodeDescr?: string;
-            }
-        ];
-    }
+    ClientSessionDetails?: IClientSessionDetails
+}
+
+export interface IClientSessionDetails {
+
+    ClientSessionID?: number;
+    ClientSessionDate: string;
+    ClientSessionNotes?: string;
+    ClientSessionICDCodes?: [
+        {
+            CPTCodeID: number;
+            CPTCodeName: string;
+            CPTCodeDescr?: string;
+        }
+    ];
+    ClientSessionCPTCodes?: [
+        {
+            ICDCodeID: number;
+            ICDCodeName: string;
+            ICDCodeDescr?: string;
+        }
+    ];
+
 }

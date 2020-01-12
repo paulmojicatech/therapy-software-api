@@ -1,11 +1,11 @@
 import { Controller, Get, Put, Body, Post, Param, Delete } from '@nestjs/common';
 import { DataService } from '../services/data.service';
-import { IClients } from '../models/clients.interface';
-import { json } from 'body-parser';
+import { IClients, IClientSessionDetails } from '../models/clients.interface';
 
 @Controller('clients')
 export class ClientsController {
 
+    // tslint:disable-next-line: variable-name
     constructor(private _dataSvc: DataService) { }
 
     @Get()
@@ -26,7 +26,7 @@ export class ClientsController {
                 this._dataSvc.disconnect();
             }
         });
-        
+
     }
 
     @Post()
@@ -39,7 +39,7 @@ export class ClientsController {
                 const clientId = lastClient ? lastClient.ClientID + 1 : 1;
                 newClientInstance = {...newClientInstance, ClientID: clientId};
                 await this._dataSvc.addToCollection('Clients', newClientInstance);
-                
+
                 resolve({ GeneralDetails: newClientInstance });
             } catch (ex) {
                 reject(ex);
@@ -70,7 +70,7 @@ export class ClientsController {
             const updatedClients = await this._dataSvc.getCollection('Clients', { ClientID: clientId});
             const updatedClient = updatedClients.find(client => client.ClientID === clientId);
             const updatedClientSessions = await this._dataSvc.getCollection('ClientSessions', { ClientID: clientId});
-            
+
             return Promise.resolve({GeneralDetails: updatedClient, SessionDetails: updatedClientSessions });
         } catch (err) {
             return Promise.reject(err);
@@ -80,12 +80,12 @@ export class ClientsController {
     }
 
     @Put(':id')
-    async updateClient(@Param('id') id: string, @Body() updatedClientReq:{ headers: any, body: { fields: any[] }}): 
+    async updateClient(@Param('id') id: string, @Body() updatedClientReq:{ headers: any, body: { updatedClient: IClients }}): 
         Promise<IClients> {
         try {
-            const updatedFields = updatedClientReq.body.fields;
+
             const where = { ClientID: +id };
-            const success = await this._dataSvc.updateCollection('Clients', where, updatedFields);
+            const success = await this._dataSvc.updateCollection('Clients', where, updatedClientReq.body.updatedClient.GeneralDetails);
             if (success) {
                 const updatedClients: IClients[] = await this._dataSvc.getCollection('Clients', where);
                 if (updatedClients?.length) {
@@ -102,7 +102,28 @@ export class ClientsController {
         } finally {
             this._dataSvc.disconnect();
         }
-        return null;
+    }
+
+    @Put(':id/clientSessions/:clientSessionId')
+    async updateClientSession(@Param('id') id: string, @Param('clientSessionId') clientSessionId: string,
+                              // tslint:disable-next-line: max-line-length
+                              @Body() updatedClientSessionReq: { headers: any, body: {updatedClientSession: IClientSessionDetails }}): Promise<IClientSessionDetails> {
+            try {
+                const where = { ClientSessionID: +clientSessionId };
+                const isoDateStr = new Date(updatedClientSessionReq.body.updatedClientSession.ClientSessionDate).toISOString();
+                const updatedSession = {...updatedClientSessionReq.body.updatedClientSession, 
+                    ClientSessionDate: isoDateStr};
+                const success = await this._dataSvc.updateCollection('ClientSessions', where, updatedSession);
+                if (success) {
+                    return Promise.resolve(updatedSession);
+                } else {
+                    return Promise.reject('Error: Client Session was not updated correctly');
+                }
+            } catch (err) {
+                return Promise.reject(err);
+            } finally {
+                this._dataSvc.disconnect();
+            }
     }
 
     @Delete(':id')
