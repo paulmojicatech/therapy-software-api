@@ -4,6 +4,8 @@ import { AppService } from './app.service';
 import { ClientsController } from './clients/clients.controller';
 import { DataService } from './services/data.service';
 import { HeartbeatController } from './heartbeat/heatbeat.controller';
+import { EmailController } from './email/email.controller';
+import { EmailService } from './services/email.service';
 
 
 @Module({
@@ -11,11 +13,13 @@ import { HeartbeatController } from './heartbeat/heatbeat.controller';
   controllers: [
     AppController, 
     ClientsController, 
-    HeartbeatController
+    HeartbeatController, 
+    EmailController
   ],
   providers: [
     AppService,
-    DataService
+    DataService,
+    EmailService
   ],
 })
 export class AppModule { }
