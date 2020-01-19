@@ -100,14 +100,18 @@ export class DataService {
     private async connect(): Promise<MongoClient> {
         return new Promise<MongoClient>(async(resolve, reject) => {
             try {
-                await this._client.connect(async(err, db) => {
-                    if (err) {
-                        reject(err);                        
-                    }
-                    else {
-                        resolve(db.connect());
-                    }
-                });
+                if (!!this._client === false) {
+                    await this._client.connect(async(err, db) => {
+                        if (err) {
+                            reject(err);                        
+                        }
+                        else {
+                            resolve(db.connect());
+                        }
+                    });
+                } else {
+                    resolve(this._client.connect());
+                }
             }   
             catch(err) {
                 reject(err);
