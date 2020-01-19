@@ -146,14 +146,14 @@ export class ClientsController {
 
     @Delete(':id/clientSessions/:clientSessionId')
     async deleteClientSession(@Param('id') id: string, @Param('clientSessionId') clientSessionId: string):
-        Promise<any[]> {
+        Promise<{clientId: number, clientSessionId: number }> {
             try {
                 const deleteClause = {
                     ClientSessionID: +clientSessionId
                 };
                 await this._dataSvc.deleteItemFromCollection('ClientSessions', deleteClause);
-                const updatedClients = await this._dataSvc.getCollection('Clients');
-                return Promise.resolve(updatedClients);
+                return { clientId: +id, clientSessionId: +clientSessionId}
+
             } catch (err) {
                 return Promise.reject(err);
             } finally {
